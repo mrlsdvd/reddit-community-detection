@@ -16,7 +16,7 @@ def create_db(tsv_filename, headers, database_name, table_name):
     cur = con.cursor()
     table_columns = ", ".join(headers)  # subreddit_name, time_stamp, ..., text
     table_type_columns = ", ".join(map(lambda header: header + " text", headers))  # # subreddit_name,text time_stamp text , ..., text text
-    cur.execute("CREATE TABLE {} ({});".format(table_name, table_type_columns))
+    cur.execute("CREATE TABLE IF NOT EXISTS {} ({});".format(table_name, table_type_columns))
 
     with open(tsv_filename,'r') as source_f:
         dict_reader = csv.DictReader(source_f, delimiter='\t', fieldnames=headers)
@@ -29,13 +29,14 @@ def create_db(tsv_filename, headers, database_name, table_name):
 
 
 def main(source_filename, database_name, table_name):
-    headers = ["subreddit_name",  "time_stamp", "subreddit_id",  "comment_id",
-    "parent_comment_id", "author_name", "score", "random_id", "thread_link_id", "text"]
+    # headers = ["subreddit_name",  "time_stamp", "subreddit_id",  "comment_id",
+    # "parent_comment_id", "author_name", "score", "random_id", "thread_link_id", "text"]
+    headers = ["comment_id", "text"]
     create_db(source_filename, headers, database_name, table_name)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         raise Exception("usage: python load_data.py <source>.tsv <database_name>.db <tablename>")
     source_filename = sys.argv[1]
     database_name = sys.argv[2]
