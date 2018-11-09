@@ -41,53 +41,47 @@ def extract_topics(dbw, author_output, topic_output,
     author_to_id_map = dict()  # Map from author_name -> author_graph_id
     topic_to_id_map = dict()  # Map from (word, sentiment) -> topic_graph_id
     topic_id_to_frequency_map = dict()  # Map from topic_graph_id -> frequency
+    author_topic_pairs = set()  # Set of (author_graph_id, topic_graph_id) pairs
 
     # Instantiate SIA object
     sid = SIA()
     # Get unique list of authors from dbw
-    authors = dbw.get_authors(5)
+    authors = dbw.get_authors(500)
     # For each author, get its comments
-    author_graph_id = 0
-    topic_graph_id = 0
+    author_graph_id = 1
+    topic_graph_id = -1
 
     with open(author_topic_output, 'w') as author_topic_f:
         for author in authors:
             # Record author name and author_graph_id
-            author_to_id_map[author] = topic_graph_id
+            author_to_id_map[author] = author_graph_id
             # TODO Maybe add author to db table?
 
-            author_comments = dbw.get_author_comments(author, 1)
+            author_comments = dbw.get_author_comments(author, 10)
             for comment in author_comments:
                 # Extract sentiment
-                sentiment = '+'
-                polarity_map = sid.polarity_scores(comment)
-                compound_val = polarity_map['compound']
-                if compound_val < 0.:
-                    sentiment = '-'
-                # Extract NOUNs
-                words = word_tokenize(comment)
-                pos_tags = pos_tag(words)
+                sentiment = vader_sentiment_extractor(comment, sid)
+                # Extract NOUN topics
+                topics = pos_topic_extractor(comment)
 
-                # Filter out words that are not NOUNs
-                noun_tuples = list(filter(lambda pos_tag: pos_tag[1] == 'NN', pos_tags))
-                nouns = set(map(lambda noun_tuple: noun_tuple[0].lower(), noun_tuples))
-
-                for noun in nouns:
-                    # Record (noun, sentiment) and topic_graph_id
-                    if (noun, sentiment) not in topic_to_id_map:
-                        topic_to_id_map[(noun, sentiment)] = topic_graph_id
+                for topic in topics:
+                    # Record (topic, sentiment) and topic_graph_id
+                    if (topic, sentiment) not in topic_to_id_map:
+                        topic_to_id_map[(topic, sentiment)] = topic_graph_id
                         topic_id_to_frequency_map[topic_graph_id] = 0
                         # Increment topic graph id
-                        topic_graph_id += 1
+                        topic_graph_id -= 1
 
-                    # Increment count of topic pair
-                    topic_id_to_frequency_map[topic_to_id_map[(noun, sentiment)]] += 1
+                    # Decrement count of topic pair
+                    topic_id_to_frequency_map[topic_to_id_map[(topic, sentiment)]] += 1
                     # TODO Maybe add topic to db table?
 
                     # Make note of author -> topic link by writing edge in file
                     author_id = author_to_id_map[author]
-                    topic_id = topic_to_id_map[(noun, sentiment)]
-                    author_topic_f.write('{}\t{}\n'.format(author_id, topic_id))
+                    topic_id = topic_to_id_map[(topic, sentiment)]
+                    if (author_id, topic_id) not in author_topic_pairs:
+                        author_topic_f.write('{}\t{}\n'.format(author_id, topic_id))
+                        author_topic_pairs.add((author_id, topic_id))
 
             # Increment author graph id
             author_graph_id += 1
@@ -96,6 +90,45 @@ def extract_topics(dbw, author_output, topic_output,
         write_mappings(author_to_id_map, author_output)
         write_mappings(topic_to_id_map, topic_output)
         write_mappings(topic_id_to_frequency_map, topic_freq_output)
+
+
+def vader_sentiment_extractor(comment, sid):
+    """
+    Get sentiment of a comment using nltk's vader SentimentIntensityAnalyzer.
+
+    Arguments:
+        comment (str): Comment to be analyzed
+        sid (SentimentIntensityAnalyzer): Vader sentiment analyzer
+
+    Returns:
+        sentiment (str): Some representation of sentiment
+    """
+    sentiment = '+'
+    polarity_map = sid.polarity_scores(comment)
+    compound_val = polarity_map['compound']
+    if compound_val < 0.:
+        sentiment = '-'
+    return sentiment
+
+def pos_topic_extractor(comment):
+    """
+    Get nouns from a comment, where nouns are determined by nltk's pos tagger.
+    Nouns with fewer than 2 charaters are ignored.
+
+    Arguments:
+        comment (str): Comment to be analyzed
+
+    Returns:
+        nouns (set): Set of nouns extracted from comment
+    """
+    words = word_tokenize(comment)
+    pos_tags = pos_tag(words)
+
+    # Filter out words that are not NOUNs and have fewer than 2 characters
+    noun_tuples = list(filter(lambda pos_tag: pos_tag[1] == 'NN' and len(pos_tag[0]) > 2, pos_tags))
+    nouns = set(map(lambda noun_tuple: noun_tuple[0].lower(), noun_tuples))
+    return nouns
+
 
 def write_mappings(mapping, output_name):
     with open(output_name, 'w') as out_f:
