@@ -87,8 +87,8 @@ def create_user_user_graph(user_topic_graph, connect_nodes_func):
 
 
 def main():
-    user_topic_graph_path = "author_topic.txt"
-    topic_freqs_path = "topic_freq.txt"
+    user_topic_graph_path = "../data/processed/author_topic.txt"
+    topic_freqs_path = "../data/processed/topic_freq.txt"
 
     user_topic_graph = load_user_topic_graph(user_topic_graph_path)
     topic_freqs = load_topic_frequencies(topic_freqs_path, sort_freqs=True)
