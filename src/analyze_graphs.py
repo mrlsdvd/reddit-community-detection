@@ -43,3 +43,39 @@ def top_down_communities(G, num_communities=20):
         community_levels.append(tuple(c for c in level))
 
     return community_levels
+
+
+def extract_topics_from_community(user_topic_graph, community, ratio_thresh=0.5):
+    """
+    Extracts the top topics from a community based on what ratio of user nodes
+    the topic is shared. That is, if
+    (# users that share topic) / (# users in community) > ratio,
+    then the topic will be returned.
+
+    Arguments:
+        user_topic_graph (nx.Graph): User-topic graph to link users to
+            their topics
+        community (list): List of node (ids) in community
+        ratio_thresh (float): Ratio of users that topic must be linked to, to be
+            included in returned topic set
+
+    Returns:
+        topic_ratios (set): Set of 'top' (topic, ratio) tuples
+    """
+    topic_counts = dict()  # Map of topic id  -> num members linked to it
+    topic_ratios = set()  # Set of (topic, ratio) tuple
+    for user in community:
+        # Get user's topics from user-topic graph
+        user_topics = list(user_topic_graph.neighbors(user))
+        # Compute ratio for each topic, if topic hasn't already been processed
+        for topic in user_topics:
+            if topic not in topic_counts:
+                topic_counts[topic] = 0
+            topic_counts[topic] += 1
+
+    # Compute ratios for each topic and add to output set if ratio is high enough
+    num_members = len(community)
+    for topic in topic_counts:
+        topic_ratio = float(topic_counts[topic]) / num_members
+        if topic_ratio > ratio_thresh:
+            topic_ratios.add((topic, topic_ratio))
