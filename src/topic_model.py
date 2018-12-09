@@ -46,18 +46,27 @@ def extract_topics(dbw, author_output, topic_output,
     # Instantiate SIA object
     sid = SIA()
     # Get unique list of authors from dbw
-    authors = dbw.get_authors(500)
+    # Load top authors
+    top_authors = []
+    with open("top_commentors.tsv", 'r') as top_commentors:  # To run from data/raw
+        for line in top_commentors:
+            top_authors.append(line.strip())
+
+    # authors = dbw.get_authors(3000)
+    authors = top_authors
     # For each author, get its comments
     author_graph_id = 1
     topic_graph_id = -1
 
     with open(author_topic_output, 'w') as author_topic_f:
-        for author in authors:
+        for i, author in enumerate(authors):
+            if i % 100 == 0:
+                print("On author {}: {}".format(i, author))
             # Record author name and author_graph_id
             author_to_id_map[author] = author_graph_id
             # TODO Maybe add author to db table?
 
-            author_comments = dbw.get_author_comments(author, 10)
+            author_comments = dbw.get_author_comments(author)
             for comment in author_comments:
                 # Extract sentiment
                 sentiment = vader_sentiment_extractor(comment, sid)

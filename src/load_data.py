@@ -31,7 +31,7 @@ def create_db(tsv_filename, headers, database_name, table_name):
 def main(source_filename, database_name, table_name):
     # headers = ["subreddit_name",  "time_stamp", "subreddit_id",  "comment_id",
     # "parent_comment_id", "author_name", "score", "random_id", "thread_link_id", "text"]
-    headers = ["comment_id", "text"]
+    headers = ["author_name", "text"]
     create_db(source_filename, headers, database_name, table_name)
 
 
