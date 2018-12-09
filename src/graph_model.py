@@ -3,24 +3,6 @@ import matplotlib.pyplot as plt
 import csv
 
 
-def load_user_topic_graph(G_path, verbose=True):
-    """
-    Loads user-topic graph from saved edge list
-
-    Arguments:
-        G_path (str): String path of file containing user-topic edge list
-        verbose (bool): If true basic info of graph is printed
-
-    Returns:
-        user_topic_graph (nx.Graph): User-topic graph
-    """
-    user_topic_graph = nx.read_edgelist(G_path, nodetype=int)
-    if verbose:
-        print("Number of nodes: {}".format(nx.number_of_nodes(user_topic_graph)))
-        print("Number of edges: {}".format(nx.number_of_edges(user_topic_graph)))
-    return user_topic_graph
-
-
 def load_topic_frequencies(topic_freqs_path, sort_freqs=True):
     """
     Loads frequencies of topics.
@@ -113,7 +95,7 @@ def create_user_user_graph(user_topic_graph, connect_nodes_func, out_filename=No
     return user_user_graph
 
 
-def connect_on_IOU(user_topic_graph, u, v, threshold=0.35):
+def connect_on_IOU(user_topic_graph, u, v, threshold=0.4):
     """
     Dertermines whether to connect to nodes u and v based on their charactestics
     in the user-topic graph. Specifically, if the IOU (intersection over union)
