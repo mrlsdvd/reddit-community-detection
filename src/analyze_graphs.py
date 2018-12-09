@@ -1,16 +1,17 @@
 import itertools
 import networkx as nx
-from nx.community import modularity_max as mod_max
+from networkx.algorithms.community.modularity_max import greedy_modularity_communities
 from networkx.algorithms.community import centrality
 
 """
 Analyze user-user graphs with community detection and more
 """
-def configuration_model(G):
-    """
-    Creates a random graph with the same degree sequence.
 
-    Args:
+def configuration_model(G, verbose=True):
+    """
+    Creates a random graph with the same degree sequence as G.
+
+    Arguments:
         G (networkx.Graph): Graph for which the degree sequence is from
     Returns:
         A random graph with the same degree sequence as G (configuration model)
@@ -18,21 +19,27 @@ def configuration_model(G):
     deg_sequence = []
 
     for nid in G.nodes():
-        deg_sequence.append(G.out_degree(nid))
+        deg_sequence.append(G.degree(nid))
 
-    return nx.configuration_model(deg_sequence)
-    
+    config = nx.configuration_model(deg_sequence)
+    if verbose:
+        print("Number of nodes: {}".format(nx.number_of_nodes(config)))
+        print("Number of edges: {}".format(nx.number_of_edges(config)))
+
+    return config
+
+
 def modularity_communities(G):
     """
     Finds communities that maximize modularity.
 
-    Args:
+    Arguments:
         G (networkx.Graph): Graph for which communities will be found
     Returns:
         communities (list): List of tuples of nodes, where each tuple of nodes
             represents a community
     """
-    communities = mod_max.greedy_modularity_communities(G)
+    communities = greedy_modularity_communities(G)
     return list(communities)
 
 
@@ -43,7 +50,7 @@ def top_down_communities(G, num_communities=20):
     returns the communities at each level until there are num_cummunities
     communities.
 
-    Args:
+    Arguments:
         G (networkx.Graph): Graph that will be split into communities
         num_communities (int): Goal for number of communities
 
@@ -150,7 +157,7 @@ def sample_topics(topic_scores, take_top=True, n=5):
         sorted_topic_scores = sorted(topics, key=lambda ts: ts[1])
         top_n_topics = list(map(lambda t: t[0], sorted_topic_scores[:n]))
         return top_n_topics
-        
+
     topics, scores = tuple(zip(*topics))
     # Normalize scores to sum to 1
     scores = np.array(scores)
@@ -160,7 +167,6 @@ def sample_topics(topic_scores, take_top=True, n=5):
 
     topics = np.random.choice(topics, size=n, replace=False, p=scores)
     return topics.tolist()
-
 
 
 def compute_betweenness_graph(user_user_graph):
@@ -175,6 +181,7 @@ def compute_betweenness_graph(user_user_graph):
         node_betweenness (dict): Dictionary of nodes with betweenness centrality as the value
     """
     return centrality.betweenness_centrality_subset(user_user_graph)
+
 
 def compute_community_betweenness(node_betweenness, community):
     """
@@ -196,7 +203,7 @@ def compute_community_betweenness(node_betweenness, community):
 
     for nid in community:
         sum_betweenness = sum_betweenness + node_betweenness[nid]
-    
+
     return float(sum_betweenness)/len(community)
 
 
@@ -215,7 +222,7 @@ def determine_prototype(user_user_graph, community):
     """
 
     max_edges = 0
-    prototype = 0
+    prototype = None
 
     for nid in community:
         # all neighbors of the node in user_user_graph
