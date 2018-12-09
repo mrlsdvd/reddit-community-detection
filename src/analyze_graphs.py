@@ -119,17 +119,23 @@ def community_topic_evolution(community_levels, user_topic_graph, sample_n=None)
     return evolution
 
 
-def sample_topics(topic_scores, n=5):
+def sample_topics(topic_scores, take_top=True, n=5):
     """
     Samples topics based on their importance or prevalance.
 
     Arguments:
         topic_scores (list): List of (topic, score) tuples, where the score determines
             the importance / prevalance of the topic
+        take_top (bool): Whether to simply take the top scoring topics
         n (int): Number of topics to be sampled
     Returns:
         sample (list): List of randomly sampled topics
     """
+    if take_top:
+        sorted_topic_scores = sorted(topics, key=lambda ts: ts[1])
+        top_n_topics = list(map(lambda t: t[0], sorted_topic_scores[:n]))
+        return top_n_topics
+        
     topics, scores = tuple(zip(*topics))
     # Normalize scores to sum to 1
     scores = np.array(scores)
