@@ -6,7 +6,22 @@ from networkx.algorithms.community import centrality
 """
 Analyze user-user graphs with community detection and more
 """
+def configuration_model(G):
+    """
+    Creates a random graph with the same degree sequence.
 
+    Args:
+        G (networkx.Graph): Graph for which the degree sequence is from
+    Returns:
+        A random graph with the same degree sequence as G (configuration model)
+    """
+    deg_sequence = []
+
+    for nid in G.nodes():
+        deg_sequence.append(G.out_degree(nid))
+
+    return nx.configuration_model(deg_sequence)
+    
 def modularity_communities(G):
     """
     Finds communities that maximize modularity.
@@ -148,7 +163,20 @@ def sample_topics(topic_scores, take_top=True, n=5):
 
 
 
-def compute_community_betweenness(user_user_graph, community):
+def compute_betweenness_graph(user_user_graph):
+    """
+    Computes the shortest-path betweenness centrality for each node.
+
+    Arguments:
+        user_user_graph (nx.Graph): User-user graph to link users to
+            other users
+
+    Returns:
+        node_betweenness (dict): Dictionary of nodes with betweenness centrality as the value
+    """
+    return centrality.betweenness_centrality_subset(user_user_graph)
+
+def compute_community_betweenness(node_betweenness, community):
     """
     Computes the averege betweenness of a community. This is the average of the
     betweenness score for all the nodes in the community with respect to the
@@ -157,14 +185,19 @@ def compute_community_betweenness(user_user_graph, community):
     nodes will be linked to nodes in other communities.
 
     Arguments:
-        user_user_graph (nx.Graph): User-user graph to link users to
-            other users
+        node_betweenness (dict): Dictionary of nodes with betweenness centrality as the value
         community (list): List of node (ids) in community
 
     Returns:
         community_betweenness (float): Average betweeness of community
     """
-    pass
+
+    sum_betweenness = 0
+
+    for nid in community:
+        sum_betweenness = sum_betweenness + node_betweenness[nid]
+    
+    return float(sum_betweenness)/len(community)
 
 
 def determine_prototype(user_user_graph, community):
@@ -180,4 +213,26 @@ def determine_prototype(user_user_graph, community):
     Returns:
         prototype (int): ID of node that best describes the community
     """
-    pass
+
+    max_edges = 0
+    prototype = 0
+
+    for nid in community:
+        # all neighbors of the node in user_user_graph
+        neighbors = user_user_graph.neighbors(nid)
+
+        # find all neighbors in the community by taking an intersection
+        in_community_neighbors = intersection(neighbors, community)
+        # in_community_degree = len(in_community_neighbors)
+
+        # find induced subgraph (in-community ego graph)
+        in_community_neighbors.append(nid)
+        ego_graph = user_user_graph.subgraph(in_community_neighbors)
+
+        # number of edges in the ego graph
+        ego_graph_edges = len(ego_graph.edges())
+        if ego_graph_edges > max_ego_graph:
+            max_edges = ego_graph_edges
+            prototype = nid
+
+    return prototype
