@@ -1,7 +1,8 @@
 import itertools
 import networkx as nx
 from networkx.algorithms.community.modularity_max import greedy_modularity_communities
-from networkx.algorithms.community import centrality
+from networkx.algorithms import centrality
+from utils import create_topic_map, get_literal_topics
 
 """
 Analyze user-user graphs with community detection and more
@@ -180,7 +181,8 @@ def compute_betweenness_graph(user_user_graph):
     Returns:
         node_betweenness (dict): Dictionary of nodes with betweenness centrality as the value
     """
-    return centrality.betweenness_centrality_subset(user_user_graph)
+    all_nodes = user_user_graph.nodes()
+    return centrality.betweenness_centrality_subset(user_user_graph, all_nodes, all_nodes)
 
 
 def compute_community_betweenness(node_betweenness, community):
