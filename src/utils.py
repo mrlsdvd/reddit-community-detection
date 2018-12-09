@@ -64,7 +64,7 @@ def create_topic_map(node_topic_path):
     topic_map = dict()
     with open(node_topic_path, 'r') as node_topics:
         for line in node_topics:
-            topic, node = node_topics.split('\t')
+            topic, node = line.split('\t')
             node = int(node)
             topic_map[node] = topic
 
