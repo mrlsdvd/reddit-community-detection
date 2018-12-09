@@ -69,7 +69,7 @@ def keep_top_n_topics(user_topic_graph, topic_frequencies, n=20):
     return user_topic_graph
 
 
-def create_user_user_graph(user_topic_graph, connect_nodes_func, out_filename=None):
+def create_user_user_graph(user_topic_graph, connect_nodes_func, out_filename=None, verbose=True):
     """
     Creates user-user graph, by connecting nodes of users based on how similar
     users are.
@@ -81,6 +81,7 @@ def create_user_user_graph(user_topic_graph, connect_nodes_func, out_filename=No
             should be connected and False otherwise
         out_filename (str): Location of where to save user-user edge list. If
             None, graph will not be saved
+        verbose (bool): If true basic info of graph is printed
 
     Returns:
         user_user_graph (nx.Graph): User-user graph
@@ -104,10 +105,15 @@ def create_user_user_graph(user_topic_graph, connect_nodes_func, out_filename=No
     if out_filename:
         nx.write_edgelist(user_user_graph, out_filename)
 
+    if verbose:
+        print("Number of nodes: {}".format(nx.number_of_nodes(user_user_graph)))
+        print("Number of edges: {}".format(nx.number_of_edges(user_user_graph)))
+
+
     return user_user_graph
 
 
-def connect_on_IOU(user_topic_graph, u, v, threshold=0.3):
+def connect_on_IOU(user_topic_graph, u, v, threshold=0.35):
     """
     Dertermines whether to connect to nodes u and v based on their charactestics
     in the user-topic graph. Specifically, if the IOU (intersection over union)
@@ -135,12 +141,9 @@ def connect_on_IOU(user_topic_graph, u, v, threshold=0.3):
     else:
         IOU = float(common_neigbhors) / total_neighbors
 
-    # print(IOU)
-
     if IOU > threshold:
         return True
     return False
-
 
 
 def main():
