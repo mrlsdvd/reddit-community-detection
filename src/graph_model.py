@@ -95,7 +95,7 @@ def create_user_user_graph(user_topic_graph, connect_nodes_func, out_filename=No
     return user_user_graph
 
 
-def connect_on_IOU(user_topic_graph, u, v, threshold=0.4):
+def connect_on_IOU(user_topic_graph, u, v, threshold=0.35):
     """
     Dertermines whether to connect to nodes u and v based on their charactestics
     in the user-topic graph. Specifically, if the IOU (intersection over union)

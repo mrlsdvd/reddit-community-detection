@@ -1,5 +1,6 @@
 import itertools
 import networkx as nx
+import random
 from networkx.algorithms.community.modularity_max import greedy_modularity_communities
 from networkx.algorithms import centrality
 from utils import create_topic_map, get_literal_topics
@@ -103,6 +104,8 @@ def extract_topics_from_community(user_topic_graph, community, ratio_thresh=0.5)
         if topic_ratio > ratio_thresh:
             topic_ratios.add((topic, topic_ratio))
 
+    return list(topic_ratios)
+
 
 def community_topic_evolution(community_levels, user_topic_graph, sample_n=None):
     """
@@ -155,11 +158,11 @@ def sample_topics(topic_scores, take_top=True, n=5):
         sample (list): List of randomly sampled topics
     """
     if take_top:
-        sorted_topic_scores = sorted(topics, key=lambda ts: ts[1])
+        sorted_topic_scores = sorted(topic_scores, key=lambda ts: ts[1])
         top_n_topics = list(map(lambda t: t[0], sorted_topic_scores[:n]))
         return top_n_topics
 
-    topics, scores = tuple(zip(*topics))
+    topics, scores = tuple(zip(*topic_scores))
     # Normalize scores to sum to 1
     scores = np.array(scores)
     scores = scores / np.sum(scores)
@@ -170,19 +173,34 @@ def sample_topics(topic_scores, take_top=True, n=5):
     return topics.tolist()
 
 
-def compute_betweenness_graph(user_user_graph):
+def compute_betweenness_graph(user_user_graph, communities, k=100):
     """
-    Computes the shortest-path betweenness centrality for each node.
+    Computes the shortest-path betweenness centrality for each node. To
+    improve runtime, a sample of k nodes from the graph are used. To best
+    approximate the betweenness of each node among other communities, the
+    sample of k nodes is made to include the prototype of each community.
 
     Arguments:
         user_user_graph (nx.Graph): User-user graph to link users to
             other users
+        communities (list): List of lists containing nodes for each community
+        k (int): Number of nodes to use as source and start
 
     Returns:
         node_betweenness (dict): Dictionary of nodes with betweenness centrality as the value
     """
-    all_nodes = user_user_graph.nodes()
-    return centrality.betweenness_centrality_subset(user_user_graph, all_nodes, all_nodes)
+    num_communities = len(communities)
+    samples_per_community = max(k / num_communities, 1)
+    st_nodes = set()
+    # Find prototype of each community
+    for community in communities:
+        prototype = determine_prototype(user_user_graph, community)
+        st_nodes.add(prototype)
+        # Randomly sample about same number of nodes from each community
+        num_samples = min(samples_per_community, len(community))
+        st_nodes.union(set(random.sample(community, num_samples)))
+
+    return centrality.betweenness_centrality_subset(user_user_graph, st_nodes, st_nodes)
 
 
 def compute_community_betweenness(node_betweenness, community):
@@ -225,22 +243,22 @@ def determine_prototype(user_user_graph, community):
 
     max_edges = 0
     prototype = None
-
+    community_set = set(community)
     for nid in community:
         # all neighbors of the node in user_user_graph
-        neighbors = user_user_graph.neighbors(nid)
+        neighbors = set(user_user_graph.neighbors(nid))
 
         # find all neighbors in the community by taking an intersection
-        in_community_neighbors = intersection(neighbors, community)
+        in_community_neighbors = neighbors.intersection(community_set)
         # in_community_degree = len(in_community_neighbors)
 
         # find induced subgraph (in-community ego graph)
-        in_community_neighbors.append(nid)
+        in_community_neighbors.add(nid)
         ego_graph = user_user_graph.subgraph(in_community_neighbors)
 
         # number of edges in the ego graph
         ego_graph_edges = len(ego_graph.edges())
-        if ego_graph_edges > max_ego_graph:
+        if ego_graph_edges > max_edges:
             max_edges = ego_graph_edges
             prototype = nid
 
