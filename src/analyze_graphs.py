@@ -3,6 +3,7 @@ import networkx as nx
 import random
 from networkx.algorithms.community.modularity_max import greedy_modularity_communities
 from networkx.algorithms import centrality
+from networkx.algorithms.community.centrality import girvan_newman
 from utils import create_topic_map, get_literal_topics
 
 """
@@ -62,7 +63,7 @@ def top_down_communities(G, num_communities=20):
             after iteration i+1 of the Girvan-Newman method
     """
     community_levels = []
-    levels = centrality.girvan_newman(G)
+    levels = girvan_newman(G)
     for level in itertools.takewhile(lambda l: len(l) <= num_communities, levels):
         community_levels.append(tuple(c for c in level))
 
@@ -173,7 +174,7 @@ def sample_topics(topic_scores, take_top=True, n=5):
     return topics.tolist()
 
 
-def compute_betweenness_graph(user_user_graph, communities, k=100):
+def compute_betweenness_graph(user_user_graph, communities, k=500):
     """
     Computes the shortest-path betweenness centrality for each node. To
     improve runtime, a sample of k nodes from the graph are used. To best
@@ -190,15 +191,17 @@ def compute_betweenness_graph(user_user_graph, communities, k=100):
         node_betweenness (dict): Dictionary of nodes with betweenness centrality as the value
     """
     num_communities = len(communities)
-    samples_per_community = max(k / num_communities, 1)
+    samples_per_community = int(max(k / float(num_communities), 1))
+    print("Samples per community: {}".format(samples_per_community))
     st_nodes = set()
     # Find prototype of each community
     for community in communities:
         prototype = determine_prototype(user_user_graph, community)
-        st_nodes.add(prototype)
+        if prototype is not None:
+            st_nodes.add(prototype)
         # Randomly sample about same number of nodes from each community
         num_samples = min(samples_per_community, len(community))
-        st_nodes.union(set(random.sample(community, num_samples)))
+        st_nodes = st_nodes.union(set(random.sample(community, num_samples)))
 
     return centrality.betweenness_centrality_subset(user_user_graph, st_nodes, st_nodes)
 
