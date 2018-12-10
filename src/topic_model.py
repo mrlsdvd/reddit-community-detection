@@ -1,4 +1,5 @@
 import sys
+import random
 import numpy as np
 import sqlite3
 from db_utils import DBWrapper
@@ -53,20 +54,23 @@ def extract_topics(dbw, author_output, topic_output,
             top_authors.append(line.strip())
 
     # authors = dbw.get_authors(3000)
-    authors = top_authors
+    # random.seed(224)
+    authors = top_authors[-500:]
+    print(authors)
     # For each author, get its comments
     author_graph_id = 1
     topic_graph_id = -1
 
     with open(author_topic_output, 'w') as author_topic_f:
         for i, author in enumerate(authors):
+            author_comments = dbw.get_author_comments(author)
+
             if i % 100 == 0:
-                print("On author {}: {}".format(i, author))
+                print("On author {}: {} - {}".format(i, author, len(author_comments)))
+
             # Record author name and author_graph_id
             author_to_id_map[author] = author_graph_id
             # TODO Maybe add author to db table?
-
-            author_comments = dbw.get_author_comments(author)
             for comment in author_comments:
                 # Extract sentiment
                 sentiment = vader_sentiment_extractor(comment, sid)
