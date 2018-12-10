@@ -253,16 +253,10 @@ def determine_prototype(user_user_graph, community):
 
         # find all neighbors in the community by taking an intersection
         in_community_neighbors = neighbors.intersection(community_set)
-        # in_community_degree = len(in_community_neighbors)
+        in_community_degree = len(in_community_neighbors)
 
-        # find induced subgraph (in-community ego graph)
-        in_community_neighbors.add(nid)
-        ego_graph = user_user_graph.subgraph(in_community_neighbors)
-
-        # number of edges in the ego graph
-        ego_graph_edges = len(ego_graph.edges())
-        if ego_graph_edges > max_edges:
-            max_edges = ego_graph_edges
+        if in_community_degree > max_edges:
+            max_edges = in_community_degree
             prototype = nid
 
     return prototype
