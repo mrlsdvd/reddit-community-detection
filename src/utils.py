@@ -33,6 +33,14 @@ def load_graph(G_path, verbose=True):
     return G
 
 
+def save_graph(G, G_path):
+    """
+    Save graph to path
+    """
+    nx.write_edgelist(G, G_path)
+
+
+
 def get_literal_topics(topic_nodes, topic_map):
     """
     Given list of topic node ids, returns actual topic strings
